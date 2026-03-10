@@ -23,3 +23,4 @@ A SketchUp extension that:
 
 ## Notes
 - The watertight pass is a lightweight cleanup heuristic and may need manual repair for difficult topology.
+- The plugin loads UI from `src/ui/index.html`; if you see an ERR_FILE_NOT_FOUND dialog, confirm the `src/ui/` folder exists under `SketchUp/Plugins`.

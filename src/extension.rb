@@ -64,13 +64,47 @@ module SketchupGeometryDecimator
           style: UI::HtmlDialog::STYLE_DIALOG
         )
 
-        html_path = File.join(__dir__, 'ui', 'index.html')
-        state.dialog.set_file(html_path)
+        load_dialog_content(state.dialog)
         bind_dialog_callbacks(state)
       end
 
       state.dialog.show
       dispatch_log(state, 'Plugin opened. Select a Group or Component Instance and click Analyze.')
+    end
+
+
+    def load_dialog_content(dialog)
+      candidates = [
+        File.join(__dir__, 'ui', 'index.html'),
+        File.expand_path(File.join(__dir__, '..', 'src', 'ui', 'index.html')),
+        File.expand_path(File.join(__dir__, '..', 'ui', 'index.html'))
+      ].uniq
+
+      html_path = candidates.find { |path| File.file?(path) }
+
+      if html_path
+        dialog.set_file(html_path)
+        return
+      end
+
+      dispatch_fallback_error(dialog, candidates)
+    end
+
+    def dispatch_fallback_error(dialog, attempted_paths)
+      message = <<~HTML
+        <!doctype html>
+        <html>
+          <body style="font-family:Segoe UI,Arial,sans-serif;padding:16px;background:#111827;color:#e5e7eb;">
+            <h2 style="margin-top:0;color:#fb7185;">Geometry Decimator UI failed to load</h2>
+            <p>The plugin could not find <code>index.html</code>. Please verify your installation layout.</p>
+            <p>Expected one of these paths:</p>
+            <pre style="white-space:pre-wrap;background:#0b1220;padding:12px;border-radius:8px;border:1px solid #334155;">#{attempted_paths.join("\n")}</pre>
+            <p>Make sure <code>sketchup_geometry_decimator.rb</code> and the <code>src/</code> folder are both inside the SketchUp <code>Plugins</code> directory.</p>
+          </body>
+        </html>
+      HTML
+
+      dialog.set_html(message)
     end
 
     def bind_dialog_callbacks(state)
