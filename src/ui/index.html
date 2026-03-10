@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Geometry Decimator</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f172a;
+      --panel: #111827;
+      --surface: #1f2937;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22d3ee;
+      --good: #34d399;
+      --error: #fb7185;
+    }
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, system-ui, sans-serif;
+      background: linear-gradient(160deg, #020617, #0f172a 45%, #111827);
+      color: var(--text);
+    }
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      gap: 16px;
+    }
+    .card {
+      background: color-mix(in srgb, var(--panel) 80%, black);
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    h1 { margin: 0 0 8px; font-size: 1.25rem; }
+    .subtitle { color: var(--muted); margin-bottom: 16px; }
+    .controls { display: grid; gap: 12px; }
+    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    button {
+      border: 1px solid #334155;
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: 150ms ease;
+    }
+    button:hover { transform: translateY(-1px); border-color: var(--accent); }
+    .primary { background: linear-gradient(120deg, #0891b2, #2563eb); border: none; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(120px, 1fr));
+      gap: 12px;
+    }
+    .stat { background: #0b1220; border: 1px solid #334155; border-radius: 10px; padding: 10px; }
+    .stat span { display: block; color: var(--muted); font-size: 0.78rem; }
+    .stat strong { font-size: 1.1rem; }
+    .slider-wrap { display: grid; gap: 8px; }
+    input[type="range"] { width: 100%; }
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      background: #0b1220;
+    }
+    .log {
+      height: 220px;
+      overflow: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.82rem;
+      background: #020617;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .entry { margin: 0 0 6px; color: var(--muted); }
+    .entry.error { color: var(--error); }
+    .entry.info { color: var(--good); }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <h1>SketchUp Geometry Decimator</h1>
+      <div class="subtitle">Simplify complex geometry, preview before/after, then apply a watertight cleanup result.</div>
+      <div class="controls">
+        <div class="row">
+          <button id="analyze" class="primary">Analyze Selection</button>
+          <button id="decimate">Run Decimation</button>
+          <button id="apply">Apply Result</button>
+          <button id="reset">Reset</button>
+        </div>
+        <div class="slider-wrap">
+          <label for="level">Geometry Simplification Strength: <strong id="levelLabel">50%</strong></label>
+          <input id="level" type="range" min="0" max="100" value="50" />
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="previewToggle" checked />
+          Toggle Before/After Preview
+        </label>
+      </div>
+    </section>
+
+    <section class="card stats">
+      <article class="stat">
+        <span>Original Faces</span>
+        <strong id="originalFaces">0</strong>
+      </article>
+      <article class="stat">
+        <span>Reduced Faces</span>
+        <strong id="reducedFaces">0</strong>
+      </article>
+      <article class="stat">
+        <span>Final Faces (Watertight)</span>
+        <strong id="finalFaces">0</strong>
+      </article>
+    </section>
+
+    <section class="card">
+      <h2>Activity Log</h2>
+      <div class="log" id="log"></div>
+    </section>
+  </main>
+
+  <script>
+    const skp = window.sketchup;
+    const level = document.getElementById('level');
+    const levelLabel = document.getElementById('levelLabel');
+    const previewToggle = document.getElementById('previewToggle');
+
+    level.addEventListener('input', () => {
+      levelLabel.textContent = `${level.value}%`;
+    });
+
+    document.getElementById('analyze').addEventListener('click', () => skp.analyzeSelection());
+    document.getElementById('decimate').addEventListener('click', () => skp.runDecimation(Number(level.value) / 100));
+    document.getElementById('apply').addEventListener('click', () => skp.applyResult());
+    document.getElementById('reset').addEventListener('click', () => skp.resetResult());
+    previewToggle.addEventListener('change', () => skp.togglePreview(previewToggle.checked));
+
+    window.geometryDecimator = {
+      updateStats(stats) {
+        document.getElementById('originalFaces').textContent = stats.original;
+        document.getElementById('reducedFaces').textContent = stats.reduced;
+        document.getElementById('finalFaces').textContent = stats.final;
+      },
+      log(entry) {
+        const logNode = document.getElementById('log');
+        const p = document.createElement('p');
+        const stamp = new Date().toLocaleTimeString();
+        p.className = `entry ${entry.level || 'info'}`;
+        p.textContent = `[${stamp}] ${entry.message}`;
+        logNode.prepend(p);
+      }
+    }
+  </script>
+</body>
+</html>
